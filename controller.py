@@ -63,7 +63,6 @@ class Controller(QMainWindow, Ui_MainWindow):
         """
         search = self.id_number.text()
         result = str(db.search(Query().ID == search))
-        print(result)
         if result != '[]':
             data = result[1:-1]
             res = ast.literal_eval(data)
