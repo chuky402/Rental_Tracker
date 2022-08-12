@@ -1,14 +1,15 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from view import Ui_MainWindow
-import csv
+from tinydb import *
+
+db = TinyDB('tenants.json')
 
 
 class Controller(QMainWindow, Ui_MainWindow):
     """
 
     """
-
     def __init__(self, *args, **kwargs):
         """
 
@@ -21,6 +22,9 @@ class Controller(QMainWindow, Ui_MainWindow):
         self.button_add.clicked.connect(lambda: self.add())
         self.button_search.clicked.connect(lambda: self.search())
 
+    def insert(self, address, tenants, pet, rent, note, number_id):
+        db.insert({'ID': number_id, 'address': address, 'Tenants': tenants, 'pet': pet, 'rent': rent, 'notes': note})
+
     def add(self):
         address = self.input_address.text()
         tenants = self.number_tenants.text()
@@ -31,33 +35,22 @@ class Controller(QMainWindow, Ui_MainWindow):
         rent = self.combo_rent.currentText()
         note = self.tenant_notes.toPlainText()
         number_id = self.id_number.text()
-
-        with open('records.csv', 'a', newline='') as file:
-            val = self.id_number.text()
-            for row in file:
-                if row[0] == val:
-                    pass
-                else:
-                    header = ['id_number', 'rent', 'address', 'tenants', 'pet', 'notes']
-                    writer = csv.DictWriter(file, fieldnames=header)
-                    writer.writerow(
-                        {'id_number': number_id, 'rent': rent, 'address': address, 'tenants': tenants, 'pet': pet,
-                         'notes': note})
-                    file.close()
+        if db.contains('ID' == number_id):
+            db.update_multiple([
+                ({'address': address}, where('ID') == number_id),
+                ({'Tenants': tenants}, where('ID') == number_id),
+                ({'pet': pet}, where('ID') == number_id),
+                ({'rent': rent}, where('ID') == number_id),
+                ({'notes': note}, where('ID') == number_id)
+                ])
+        else:
+            self.insert(address, tenants, pet, rent, note, number_id)
 
     def search(self):
-        val = self.id_number.text()
-        with open('records.csv', 'r') as file2:
-            reader = csv.reader(file2)
-            for row in reader:
-                if row[0] == val:
-                    number_id = row[0]
-                    rent = row[1]
-                    address = row[2]
-                    tenants = row[3]
-                    pet = row[4]
-                    notes = row[5]
-
+        user = Query()
+        search = self.id_number.text()
+        result = db.search('ID' == search)
+        print(result)
 
         self.id_number.setValue(int(number_id))
         self.combo_rent.setCurrentText(rent)
@@ -68,4 +61,3 @@ class Controller(QMainWindow, Ui_MainWindow):
         elif pet == 'no':
             self.option_pet_no.setChecked(True)
         self.tenant_notes.setText(notes)
-        file2.close()
